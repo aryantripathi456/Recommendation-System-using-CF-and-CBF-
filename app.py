@@ -4,9 +4,12 @@ import pandas as pd
 import requests
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import os
+from dotenv import load_dotenv
 
-# Optional: Add TMDB API key if you want real posters. We will use a generic poster if unavailable.
-# TMDB_API_KEY = "your_tmdb_api_key"
+# Load environment variables
+load_dotenv()
+TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
 st.set_page_config(page_title="Movie Recommender", layout="wide", page_icon="🎬")
 
@@ -36,11 +39,19 @@ movies, vector, cf_preds, cf_user_indices = load_data()
 # Helper function to fetch poster from TMDB API if possible (requires API Key)
 # We will just show a placeholder image if TMDB API is not set up
 def fetch_poster(movie_id):
-    # If we had a TMDB API key:
-    # response = requests.get(f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US")
-    # data = response.json()
-    # return "https://image.tmdb.org/t/p/w500/" + data['poster_path']
-    return "https://via.placeholder.com/500x750/1a1a2e/ffffff?text=" + str(movie_id)
+    if not TMDB_API_KEY:
+        return f"https://placehold.co/500x750/1a1a2e/ffffff?text={movie_id}"
+    try:
+        url = f"https://api.tmdb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        if data.get('poster_path'):
+            return f"https://image.tmdb.org/t/p/w500{data['poster_path']}"
+    except Exception as e:
+        print(f"Error fetching poster for {movie_id}: {e}")
+        
+    return f"https://placehold.co/500x750/1a1a2e/ffffff?text={movie_id}"
 
 def get_content_recommendations(movie_title, top_n=10):
     if movie_title not in movies['title'].values:
@@ -65,7 +76,7 @@ def get_content_recommendations(movie_title, top_n=10):
         })
     return recommended_movies
 
-def hybrid_recommendations(user_id, movie_title, top_n=5):
+def hybrid_recommendations(user_id, movie_title, top_n=10):
     """
     Hybrid recommendation:
     1. Get content-based recommendations for the given movie.
@@ -135,18 +146,17 @@ with col2:
 
 if st.button("Recommend"):
     with st.spinner("Finding the best movies for you..."):
-        recs = hybrid_recommendations(selected_user, selected_movie, top_n=5)
+        recs = hybrid_recommendations(selected_user, selected_movie, top_n=10)
         
         if recs:
             st.subheader(f"Because you liked '{selected_movie}', we recommend:")
             
             # Display movies in columns
-            cols = st.columns(5)
+            cols = st.columns(10)
             for col, rec in zip(cols, recs):
                 with col:
-                    # Let's generate a stylized poster placeholder
-                    poster_url = fetch_poster(rec['title'])
-                    st.image(poster_url, use_column_width=True)
+                    poster_url = fetch_poster(rec['tmdbId'])
+                    st.image(poster_url, use_container_width=True)
                     st.markdown(f"**{rec['title']}**")
                     st.caption(f"Score: {rec['hybrid_score']:.2f}")
         else:
