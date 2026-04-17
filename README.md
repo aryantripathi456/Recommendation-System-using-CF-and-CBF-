@@ -35,7 +35,6 @@ Run the following script to automatically pull down all necessary datasets into 
 ```bash
 python download_data.py
 ```
-*(Note: If you run into Kaggle verification issues or rate limits, make sure your system's global Kaggle API tokens are setup properly)*
 
 ### 3. Generate Models
 Run the training script to clean the data, generate mathematical relationships, and dump the binary output models in the data folder.
@@ -50,4 +49,4 @@ Launch the Streamlit front-end application to interact with your tuned model!
 streamlit run app.py
 ```
 
-This will launch a web browser pointed to `http://localhost:8501`. Have fun experimenting with different seeds and user accounts!
+This will launch a web browser pointed to `http://localhost:8501`.
