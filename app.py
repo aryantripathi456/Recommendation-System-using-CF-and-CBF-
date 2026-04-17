@@ -11,7 +11,65 @@ from dotenv import load_dotenv
 load_dotenv()
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
-st.set_page_config(page_title="Movie Recommender", layout="wide", page_icon="🎬")
+st.set_page_config(page_title="Movie Recommender", layout="wide")       
+
+# Custom CSS for Premium UI
+st.markdown("""
+<style>
+    /* Main Background & Text */
+    .stApp {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Headers */
+    h1, h2, h3 {
+        color: #38bdf8 !important;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+    
+    /* Button Styling */
+    .stButton>button {
+        background: linear-gradient(90deg, #38bdf8 0%, #3b82f6 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        font-weight: bold;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+        color: #ffffff;
+    }
+    
+    /* Movie Titles */
+    .stMarkdown p strong {
+        color: #e2e8f0;
+        font-size: 1.05rem;
+    }
+    
+    /* Selectboxes */
+    div[data-baseweb="select"] > div {
+        background-color: #1e293b;
+        border-color: #334155;
+        color: #f8fafc;
+        border-radius: 8px;
+    }
+    
+    /* Images with hover effect */
+    div[data-testid="stImage"] img {
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        transition: transform 0.3s ease-in-out;
+    }
+    div[data-testid="stImage"] img:hover {
+        transform: scale(1.05);
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Load models and data
 @st.cache_resource
@@ -135,7 +193,7 @@ def hybrid_recommendations(user_id, movie_title, top_n=10):
 
 # ------------------ UI ------------------
 
-st.title("🎬 Hybrid Movie Recommender System")
+st.title("Hybrid Movie Recommender System")
 st.markdown("This system uses a **Hybrid Algorithm** combining Content-Based Filtering (similar plot, genres, cast) and Collaborative Filtering (user rating predictions via SVD).")
 
 col1, col2 = st.columns(2)
@@ -151,14 +209,15 @@ if st.button("Recommend"):
         if recs:
             st.subheader(f"Because you liked '{selected_movie}', we recommend:")
             
-            # Display movies in columns
-            cols = st.columns(10)
-            for col, rec in zip(cols, recs):
-                with col:
-                    poster_url = fetch_poster(rec['tmdbId'])
-                    st.image(poster_url, use_container_width=True)
-                    st.markdown(f"**{rec['title']}**")
-                    st.caption(f"Score: {rec['hybrid_score']:.2f}")
+            # Display movies in wrapped rows of 5
+            for i in range(0, len(recs), 5):
+                cols = st.columns(5)
+                for col, rec in zip(cols, recs[i:i+5]):
+                    with col:
+                        poster_url = fetch_poster(rec['tmdbId'])
+                        st.image(poster_url, width='stretch')
+                        st.markdown(f"**{rec['title']}**")
+                        st.caption(f"Score: {rec['hybrid_score']:.2f}")
         else:
             st.error("No recommendations found. Try another movie.")
 
