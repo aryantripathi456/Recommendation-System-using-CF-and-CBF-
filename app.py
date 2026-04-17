@@ -13,7 +13,6 @@ TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
 st.set_page_config(page_title="Movie Recommender", layout="wide")       
 
-# Custom CSS for Premium UI
 st.markdown("""
 <style>
     /* Main Background & Text */
@@ -94,11 +93,11 @@ def load_data():
 
 movies, vector, cf_preds, cf_user_indices = load_data()
 
-# Helper function to fetch poster from TMDB API if possible (requires API Key)
-# We will just show a placeholder image if TMDB API is not set up
+# function to fetch poster from TMDB API
 def fetch_poster(movie_id):
     if not TMDB_API_KEY:
-        return f"https://placehold.co/500x750/1a1a2e/ffffff?text={movie_id}"
+        return f"https://placehold.co/500x750/1a1a2e/ffffff?text={movie_id}"        # We will just show a placeholder image if TMDB API is not set up
+
     try:
         url = f"https://api.tmdb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US"
         response = requests.get(url, timeout=5)
@@ -150,7 +149,7 @@ def hybrid_recommendations(user_id, movie_title, top_n=10):
     if user_id in cf_user_indices:
         user_row_idx = cf_user_indices.index(user_id)
         # cf_preds has users as rows and tmdbIds as columns
-        # However, columns are string or int representations of tmdb_id depending on pivot table. Let's cast them.
+        # columns are string or int representations of tmdb_id depending on pivot table.
         
         user_predictions = cf_preds.iloc[user_row_idx]
         
@@ -164,8 +163,8 @@ def hybrid_recommendations(user_id, movie_title, top_n=10):
                 cf_score = user_predictions[tmdb_id]
                 
             # Combine scores (e.g. 50-50 weight)
-            # Since content is [0-1] and CF is usually [0-5], we might want to normalize CF.
-            # Here for simplicity, we just add them or use CF to reorder
+            # content is 0-1 and CF is usually 0-5, we will normalize CF.
+            # for simplicity, we just add them or use CF to reorder
             hybrid_score = (content_score * 5) * 0.5 + cf_score * 0.5
             
             hybrid_recs.append({
@@ -176,7 +175,7 @@ def hybrid_recommendations(user_id, movie_title, top_n=10):
                 'cf_score': cf_score
             })
     else:
-        # Fallback to purely content-based if user not found in CF model
+        # Fallback to purely content-based if user is not in CF model
         for rec in content_recs:
             hybrid_recs.append({
                 'title': rec['title'],
@@ -191,7 +190,7 @@ def hybrid_recommendations(user_id, movie_title, top_n=10):
     return hybrid_recs[:top_n]
 
 
-# ------------------ UI ------------------
+# UI
 
 st.title("Hybrid Movie Recommender System")
 st.markdown("This system uses a **Hybrid Algorithm** combining Content-Based Filtering (similar plot, genres, cast) and Collaborative Filtering (user rating predictions via SVD).")
@@ -209,7 +208,6 @@ if st.button("Recommend"):
         if recs:
             st.subheader(f"Because you liked '{selected_movie}', we recommend:")
             
-            # Display movies in wrapped rows of 5
             for i in range(0, len(recs), 5):
                 cols = st.columns(5)
                 for col, rec in zip(cols, recs[i:i+5]):
